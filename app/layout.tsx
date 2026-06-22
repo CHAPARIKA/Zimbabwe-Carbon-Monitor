@@ -10,7 +10,7 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: 'Carbon Monitor | IoT-Based Emission Tracking System',
   description: 'Real-time IoT carbon monitoring dashboard with AI predictions and MRV compliance reporting for ZCMA registry',
-  generator: 'v0.app',
+  generator: 'Zimbabwe Carbon Monitor',
   icons: {
     icon: [
       {
