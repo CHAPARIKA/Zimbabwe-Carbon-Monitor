@@ -67,30 +67,60 @@ export default function KgotsoDashboard() {
   const [forecasting, setForecasting] = useState(false)
   const [forecastModel, setForecastModel] = useState<string>('')
 
-  // ── Real-time listener ────────────────────────────────────────────────────
+  // ── Real-time listeners (kgotso_readings + sensor_readings merged) ───────
   useEffect(() => {
-    const q = query(
-      collection(db, 'kgotso_readings'),
-      orderBy('timestamp', 'desc'),
-      limit(168),
-    )
-    return onSnapshot(q, snap => {
-      const docs: KgotsoReading[] = snap.docs.map(d => {
+    const CO2_MG_TO_PPM = 24.45 / 44.01
+
+    let kgotso: KgotsoReading[] = []
+    let sensor: KgotsoReading[]  = []
+
+    function merge() {
+      const combined = [...kgotso, ...sensor]
+        .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+        .slice(-168)
+      setReadings(combined)
+      const now = Date.now()
+      setIsLive(combined.some(r => now - r.timestamp.getTime() < 5 * 60_000))
+    }
+
+    const q1 = query(collection(db, 'kgotso_readings'), orderBy('timestamp', 'desc'), limit(168))
+    const unsub1 = onSnapshot(q1, snap => {
+      kgotso = snap.docs.map(d => {
         const data = d.data()
         return {
           id:                  d.id,
-          source_id:           data.source_id ?? 'ixxkut7za9s',
+          source_id:           data.source_id ?? 'kgotso',
           timestamp:           data.timestamp?.toDate?.() ?? new Date(),
           co2_ppm:             data.co2_ppm,
           temperature_celsius: data.temperature_celsius,
           humidity_percent:    data.humidity_percent,
-          data_source:         data.data_source,
+          data_source:         data.data_source ?? 'kgotso',
         }
-      }).reverse()
-      setReadings(docs)
-      const now = Date.now()
-      setIsLive(docs.some(r => now - r.timestamp.getTime() < 5 * 60_000))
+      })
+      merge()
     })
+
+    const q2 = query(collection(db, 'sensor_readings'), orderBy('timestamp', 'desc'), limit(168))
+    const unsub2 = onSnapshot(q2, snap => {
+      sensor = snap.docs.map(d => {
+        const data = d.data()
+        const ts = data.timestamp
+          ? (typeof data.timestamp === 'string' ? new Date(data.timestamp) : data.timestamp?.toDate?.() ?? new Date())
+          : new Date()
+        return {
+          id:                  d.id,
+          source_id:           data.device_id ?? 'esp32',
+          timestamp:           ts,
+          co2_ppm:             data.co2_ppm ?? Math.round((data.co2_mg_m3 ?? 0) * CO2_MG_TO_PPM),
+          temperature_celsius: data.temperature ?? 0,
+          humidity_percent:    data.humidity ?? 0,
+          data_source:         'esp32',
+        }
+      })
+      merge()
+    })
+
+    return () => { unsub1(); unsub2() }
   }, [])
 
   // ── Forecast trigger ──────────────────────────────────────────────────────
