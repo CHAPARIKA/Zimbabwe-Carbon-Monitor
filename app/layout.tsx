@@ -12,21 +12,8 @@ export const metadata: Metadata = {
   description: 'Real-time IoT carbon monitoring dashboard with AI predictions and MRV compliance reporting for ZCMA registry',
   generator: 'Zimbabwe Carbon Monitor',
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
+    apple: '/icon.svg',
   },
 }
 
