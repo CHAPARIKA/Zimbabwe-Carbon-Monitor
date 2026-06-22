@@ -102,7 +102,18 @@ export default function UsersPage() {
       await fetchUsers()
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'An error occurred'
-      setError(msg.replace('Firebase: ', '').replace(/\(auth\/.*\)\.?/, ''))
+      const code = (e as { code?: string }).code ?? ''
+      if (code === 'auth/email-already-in-use') {
+        setError('That email is already registered.')
+      } else if (code === 'auth/invalid-email') {
+        setError('Invalid email address.')
+      } else if (code === 'auth/weak-password') {
+        setError('Password must be at least 6 characters.')
+      } else if (code === 'auth/unauthorized-domain') {
+        setError('This domain is not authorized in Firebase. Contact your administrator.')
+      } else {
+        setError(msg.replace('Firebase: ', '').replace(/\s*\(auth\/[^)]+\)\.?/, ''))
+      }
     } finally {
       setSaving(false)
     }
